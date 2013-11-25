@@ -1,0 +1,15 @@
+{
+    :username "bobpoekert"
+    :name "Bob Poekert"
+    :consumer-key ""
+    :consumer-secret ""
+    :access-token ""
+    :access-token-secret "" 
+
+    :kaomoji {
+      :happy "(o^_^)o"
+      :angry "(；￣Д￣ )"
+      :sad "o(╥﹏╥)o"
+      :neutral "﹤( '.' )﹥"
+
+      :unknown "┗(･ω･;)┛"}}
