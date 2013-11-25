@@ -22,18 +22,29 @@
 (def categorizer
   (onlp/make-document-categorizer document-model))
 
+(defn status-seq
+  ([offset-id]
+    (lazy-seq
+      (let [default-params {:screen-name (:username settings)
+                                 :count "200"
+                                 :include-rts "false"
+                                 :trim-user "true"}
+            response (twtr/statuses-user-timeline
+                        :oauth-creds twitter-creds
+                        :params (if offset-id
+                                  (assoc default-params :max-id offset-id)
+                                  default-params))
+            body (:body response)]
+        (if (empty? body)
+          nil
+          (concat body (status-seq (apply max (map :id body))))))))
+    ([] (status-seq nil)))
+
 (defn get-statuses
   []
   (filter
     #(not (re-find #"(^|\s+)RT\s+" %))
-    (map :text
-      (:body
-        (twtr/statuses-user-timeline
-          :oauth-creds twitter-creds
-          :params {:screen-name (:username settings)
-                   :count "200"
-                   :include-rts "false"
-                   :trim-user "true"})))))
+    (map :text (status-seq))))
 
 (defn moods
   []
@@ -41,7 +52,7 @@
 
 (defn current-mood
   []
-  (let [all-moods (map :best-category (moods))
+  (let [all-moods (map :best-category (take 1000 (moods)))
         recent-moods (take 100 all-moods)
         pct-changes (merge-with
                       (fn [overall recent]
