@@ -26,9 +26,9 @@
   ([offset-id]
     (lazy-seq
       (let [default-params {:screen-name (:username settings)
-                                 :count "200"
-                                 :include-rts "false"
-                                 :trim-user "true"}
+                             :count "200"
+                             :include-rts "false"
+                             :trim-user "true"}
             response (twtr/statuses-user-timeline
                         :oauth-creds twitter-creds
                         :params (if offset-id
@@ -37,7 +37,7 @@
             body (:body response)]
         (if (empty? body)
           nil
-          (concat body (status-seq (apply max (map :id body))))))))
+          (concat body (status-seq (:id (last body))))))))
     ([] (status-seq nil)))
 
 (defn get-statuses
@@ -50,9 +50,21 @@
   []
   (map #(assoc (categorizer %) :tweet %) (get-statuses)))
 
+(defn noisy-take
+  ([total-n n s]
+    (lazy-seq
+      (if (or (empty? s) (zero? n)) nil
+        (let [[head & tail] s
+              percent (float (* 100 (/ (- total-n n) total-n)))]
+          (if (= (Math/floor percent) percent)
+            (println (str percent "%")))
+          (cons head (noisy-take total-n (dec n) tail))))))
+  ([n s]
+    (noisy-take n n s)))
+
 (defn current-mood
   []
-  (let [all-moods (map :best-category (take 1000 (moods)))
+  (let [all-moods (map :best-category (noisy-take 1000 (moods)))
         recent-moods (take 100 all-moods)
         pct-changes (merge-with
                       (fn [overall recent]
@@ -60,6 +72,16 @@
                       (frequencies all-moods)
                       (frequencies recent-moods))]
       (first (apply max-key second (seq pct-changes)))))
+
+(defn percentages
+  [s]
+  (let [freqs (frequencies s)
+        total (reduce + (vals freqs))]
+    (for [[k v] (seq freqs)]
+      [k (double (* (/ v total) 100))])))
+
+'(percentages (take 100 (map :best-category (moods))))
+
 
 (defn current-kaomoji
   []
